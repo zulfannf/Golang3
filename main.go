@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
+
+	"html/template"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -52,11 +54,35 @@ func main() {
 			message = "Bahaya"
 		}
 
-		htmlResponse := fmt.Sprintf("<html><body><h1>Weather Report</h1><p>Temperature: %d meter</p><p>Condition: %d meter/detik</p><p>%s</p></body></html>", weatherData.Status.Water, weatherData.Status.Wind, message)
+		tmpl, err := template.ParseFiles("weather.html")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		dataMap := map[string]interface{}{
+			"water": weatherData.Status.Water,
+			"wind":   weatherData.Status.Wind,
+			"Message":     message,
+		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// Create a new file to save the populated template
+		reportFile, err := ioutil.TempFile("", "weather_*.html")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer reportFile.Close()
 
-		fmt.Fprint(w, htmlResponse)
+		var resultBuffer bytes.Buffer
+		err = tmpl.Execute(&resultBuffer, dataMap)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Respond to the client with the generated HTML content
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(resultBuffer.Bytes())
 	})
 	http.ListenAndServe(":8080", nil)
 }
