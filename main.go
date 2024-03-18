@@ -65,7 +65,6 @@ func main() {
 			"Message":     message,
 		}
 
-		// Create a new file to save the populated template
 		reportFile, err := ioutil.TempFile("", "weather_*.html")
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -80,7 +79,6 @@ func main() {
 			return
 		}
 
-		// Respond to the client with the generated HTML content
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(resultBuffer.Bytes())
 	})
